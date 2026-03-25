@@ -28,7 +28,8 @@ export type Mode =
   | 'standby'
   | 'assertingVisibility'
   | 'assertingValue'
-  | 'assertingSnapshot';
+  | 'assertingSnapshot'
+  | 'generating';
 
 export type ElementInfo = {
   selector: string;
@@ -51,6 +52,28 @@ export type OverlayState = {
   offsetX: number;
 };
 
+export type GenerationStatus =
+  | 'idle' | 'finalizing' | 'analyzing' | 'writing'
+  | 'running' | 'repairing' | 'done' | 'error'
+  | 'exported';
+
+export type GenerationStatusEvent = {
+  status: GenerationStatus;
+  message: string;
+  progress: number; // 0–100
+  outputFile?: string; // set only when status === 'done'
+  promptFilePath?: string; // set only when status === 'exported'
+};
+
+export type NetworkPanelEntry = {
+  url: string;
+  method: string;
+  status?: number;
+  bucket: 'direct' | 'pageLoad' | 'noise' | 'aborted';
+  linkedStepIndex?: number;
+  operationName?: string;
+};
+
 export type UIState = {
   mode: Mode;
   actionPoint?: Point;
@@ -59,6 +82,9 @@ export type UIState = {
   language: Language;
   testIdAttributeName: string;
   overlay: OverlayState;
+  generationStatus?: GenerationStatusEvent;
+  networkEntries?: NetworkPanelEntry[];
+  scenarioName?: string;
 };
 
 export type CallLogStatus = 'in-progress' | 'done' | 'error' | 'paused';
@@ -114,6 +140,8 @@ export interface RecorderBackend {
   highlightRequested(params: { selector?: string; ariaTemplate?: AriaTemplateNode }): Promise<void>;
   fileChanged(params: { fileId: string }): Promise<void>;
   clear(): Promise<void>;
+  generateTest(params: { scenarioName: string; outputFile: string }): Promise<void>;
+  setScenarioName(params: { name: string }): Promise<void>;
 }
 
 export interface RecorderFrontend {
@@ -124,4 +152,8 @@ export interface RecorderFrontend {
   pageNavigated: (params: { url: string | undefined }) => void;
   callLogsUpdated: (params: { callLogs: CallLog[] }) => void;
   elementPicked: (params: { elementInfo: ElementInfo, userGesture?: boolean }) => void;
+  generationStatusChanged: (params: GenerationStatusEvent) => void;
+  networkEntriesUpdated: (params: { entries: NetworkPanelEntry[] }) => void;
+  promptReady: (params: { prompt: string; filePath: string }) => void;
+  configUpdated: (params: { aiCodegen: boolean }) => void;
 }

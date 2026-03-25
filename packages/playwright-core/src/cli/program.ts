@@ -72,6 +72,7 @@ commandWithOpenOptions('codegen [url]', 'open page and generate code for user ac
       ['-o, --output <file name>', 'saves the generated script to a file'],
       ['--target <language>', `language to generate, one of javascript, playwright-test, python, python-async, python-pytest, csharp, csharp-mstest, csharp-nunit, java, java-junit`, codegenId()],
       ['--test-id-attribute <attributeName>', 'use the specified attribute to generate data test ID selectors'],
+      ['--ai-codegen', 'enable AI-powered test generation with network capture and prompt export'],
     ]).action(async function(url, options) {
   await codegen(options, url);
 }).addHelpText('afterAll', `
@@ -571,7 +572,7 @@ async function open(options: Options, url: string | undefined) {
   await openPage(context, url);
 }
 
-async function codegen(options: Options & { target: string, output?: string, testIdAttribute?: string }, url: string | undefined) {
+async function codegen(options: Options & { target: string, output?: string, testIdAttribute?: string, aiCodegen?: boolean }, url: string | undefined) {
   const { target: language, output: outputFile, testIdAttribute: testIdAttributeName } = options;
   const tracesDir = path.join(os.tmpdir(), `playwright-recorder-trace-${Date.now()}`);
   const { context, browser, launchOptions, contextOptions, closeBrowser } = await launchContext(options, {
@@ -592,6 +593,7 @@ async function codegen(options: Options & { target: string, output?: string, tes
     testIdAttributeName,
     outputFile: outputFile ? path.resolve(outputFile) : undefined,
     handleSIGINT: false,
+    aiCodegen: options.aiCodegen || !!process.env.PW_AI_CODEGEN,
   });
   await openPage(context, url);
   donePromise.resolve();

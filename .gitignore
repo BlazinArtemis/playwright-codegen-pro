@@ -37,4 +37,6 @@ test-results
 .cache/
 .eslintcache
 playwright.env
+.playwright-session.md
+.playwright-prompt.md
 /firefox/

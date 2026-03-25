@@ -1246,6 +1246,7 @@ class Overlay {
           'assertingVisibility': 'recording-inspecting',
           'assertingValue': 'recording-inspecting',
           'assertingSnapshot': 'recording-inspecting',
+          'generating': 'standby',
         };
         this._recorder.setMode(newMode[this._recorder.state.mode]);
       }),
@@ -1402,6 +1403,7 @@ export class Recorder {
       'assertingVisibility': new InspectTool(this, true),
       'assertingValue': new TextAssertionTool(this, 'value'),
       'assertingSnapshot': new TextAssertionTool(this, 'snapshot'),
+      'generating': new NoneTool(),
     };
     this._currentTool = this._tools.none;
     this._currentTool.install?.();

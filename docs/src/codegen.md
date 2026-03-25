@@ -438,6 +438,40 @@ playwright codegen --user-data-dir=/path/to/your/browser/data/ github.com/micros
 pwsh bin/Debug/netX/playwright.ps1 codegen --user-data-dir=/path/to/your/browser/data/ github.com/microsoft/playwright
 ```
 
+#### AI-powered test generation
+
+Run `codegen` with `--ai-codegen` to enable AI-powered test generation features. This adds network capture, session recording, and prompt export to the recorder — allowing you to generate tests using your preferred AI tool (Claude Code, Cursor, ChatGPT, etc.).
+
+When enabled, the recorder will:
+- Show a **Generate** button, **scenario name** input, and **network panel**
+- Capture and classify network requests alongside your recorded actions
+- Continuously write a live session file (`.playwright-session.md`) that AI tools can read via MCP
+- On clicking **Generate Test**, copy a detailed prompt to your clipboard and save it to `.playwright-prompt.md`
+
+```bash js
+npx playwright codegen --ai-codegen https://example.com
+```
+
+```bash java
+mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="codegen --ai-codegen https://example.com"
+```
+
+```bash python
+playwright codegen --ai-codegen https://example.com
+```
+
+```bash csharp
+pwsh bin/Debug/netX/playwright.ps1 codegen --ai-codegen https://example.com
+```
+
+You can also enable this feature using the `PW_AI_CODEGEN` environment variable:
+
+```bash js
+PW_AI_CODEGEN=1 npx playwright codegen https://example.com
+```
+
+The MCP tool `recorder_get_session` reads the live session file, so AI assistants can access the recorded session at any point during recording without clicking any button.
+
 ## Record using custom setup
 
 If you would like to use codegen in some non-standard setup (for example, use [`method: BrowserContext.route`]), it is possible to call [`method: Page.pause`] that will open a separate window with codegen controls.

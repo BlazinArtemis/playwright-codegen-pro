@@ -83,3 +83,208 @@
   margin-right: 5px;
   flex-shrink: 0;
 }
+
+/* ── Steps + Network panel layout ── */
+.recorder-body {
+  display: flex;
+  flex: auto;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.steps-panel-col {
+  width: 220px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--vscode-panel-border, #ccc);
+  overflow: hidden;
+}
+
+.steps-panel-inner {
+  flex: auto;
+  overflow-y: auto;
+}
+
+.steps-empty {
+  padding: 8px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #888);
+}
+
+.step-item {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border, #ccc);
+}
+
+.step-text {
+  font-size: 11px;
+  color: var(--vscode-foreground, #333);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.step-network-badges {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.scenario-name-area {
+  padding: 6px 8px;
+  border-top: 1px solid var(--vscode-panel-border, #ccc);
+  flex: none;
+}
+
+.scenario-name-area label {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground, #888);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.scenario-name-area input {
+  width: 100%;
+  font-size: 11px;
+  background: var(--vscode-input-background, #fff);
+  color: var(--vscode-input-foreground, #333);
+  border: 1px solid var(--vscode-input-border, #ccc);
+  padding: 2px 4px;
+  box-sizing: border-box;
+}
+
+/* ── Network panel ── */
+.network-panel {
+  flex: none;
+  height: 150px;
+  border-top: 1px solid var(--vscode-panel-border, #ccc);
+  overflow-y: auto;
+  font-size: 11px;
+}
+
+.network-panel-header {
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground, #888);
+  border-bottom: 1px solid var(--vscode-panel-border, #ccc);
+  position: sticky;
+  top: 0;
+  background: var(--vscode-editor-background, #fff);
+}
+
+.network-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border, #eee);
+}
+
+.network-row.noise-row {
+  opacity: 0.35;
+}
+
+.network-row.direct-row {
+  background: var(--vscode-list-activeSelectionBackground, #e4f0fc);
+}
+
+.network-url {
+  flex: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  color: var(--vscode-foreground, #333);
+}
+
+.network-link {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground, #888);
+  white-space: nowrap;
+}
+
+/* ── Badge styles ── */
+.net-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: 3px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.net-method-post,
+.net-method-put  { background: #FAEEDA; color: #633806; }
+.net-method-get  { background: #E6F1FB; color: #0C447C; }
+.net-method-delete { background: #FCEBEB; color: #791F1F; }
+.net-method-patch  { background: #FAEEDA; color: #633806; }
+
+.net-status-2xx { background: #EAF3DE; color: #27500A; }
+.net-status-4xx,
+.net-status-5xx { background: #FCEBEB; color: #791F1F; }
+
+.net-url-hint {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* ── Smart toolbar generation status bar ── */
+.generation-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  height: 36px;
+  flex: auto;
+  font-size: 11px;
+}
+
+.generation-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.generation-dot.status-finalizing,
+.generation-dot.status-analyzing   { background: #bfae00; }
+.generation-dot.status-writing     { background: #534AB7; }
+.generation-dot.status-running     { background: #01bb01; }
+.generation-dot.status-repairing   { background: #bfae00; animation: pulse 1s infinite; }
+.generation-dot.status-done        { background: #01bb01; }
+.generation-dot.status-error       { background: #a1260d; }
+.generation-dot.status-exported    { background: #01bb01; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.generation-message {
+  flex: auto;
+  color: var(--vscode-foreground, #333);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.generation-progress {
+  width: 100px;
+  height: 4px;
+  flex: none;
+}
+
+.generation-actions {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}

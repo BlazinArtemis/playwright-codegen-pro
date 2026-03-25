@@ -164,12 +164,29 @@ export type FrameDescription = {
   framePath: string[];
 };
 
+export type NetworkBucket = 'direct' | 'pageLoad' | 'noise' | 'aborted';
+
+export type NetworkEvent = {
+  url: string;
+  method: string;
+  status?: number;
+  bodySnippet?: string;     // first 500 chars of text/json/html body, already redacted
+  firedMs: number;          // ms after action.startTime that request fired
+  resolvedMs?: number;      // ms after action.startTime that response arrived
+  bucket: NetworkBucket;
+  pageGuid: string;
+  isRedirect: boolean;
+  aborted: boolean;
+  operationName?: string;   // GraphQL only: extracted from request body
+};
+
 export type ActionInContext = {
   frame: FrameDescription;
   description?: string;
   action: Action;
   startTime: number;
   endTime?: number;
+  networkEvents?: NetworkEvent[];   // populated by NetworkCapture during recording
 };
 
 export type SignalInContext = {

@@ -39,6 +39,7 @@ import tabs from './tabs';
 import tracing from './tracing';
 import verify from './verify';
 import video from './video';
+import recorder from './recorder';
 import wait from './wait';
 import webstorage from './webstorage';
 
@@ -60,6 +61,7 @@ export const browserTools: Tool<any>[] = [
   ...navigate,
   ...network,
   ...pdf,
+  ...recorder,
   ...route,
   ...runCode,
   ...screenshot,

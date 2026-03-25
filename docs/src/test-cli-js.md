@@ -258,6 +258,7 @@ npx playwright codegen --target=python
 | `-o, --output <file>` | Output file for the generated script |
 | `--target <language>` | Language to use: javascript, playwright-test, python, etc. |
 | `--test-id-attribute <attr>` | Attribute to use for test IDs |
+| `--ai-codegen` | Enable AI-powered test generation with network capture and prompt export |
 
 ### Trace Viewer
 

@@ -1949,6 +1949,7 @@ export type BrowserContextEnableRecorderParams = {
   outputFile?: string,
   handleSIGINT?: boolean,
   omitCallTracking?: boolean,
+  aiCodegen?: boolean,
 };
 export type BrowserContextEnableRecorderOptions = {
   language?: string,
@@ -1963,6 +1964,7 @@ export type BrowserContextEnableRecorderOptions = {
   outputFile?: string,
   handleSIGINT?: boolean,
   omitCallTracking?: boolean,
+  aiCodegen?: boolean,
 };
 export type BrowserContextEnableRecorderResult = void;
 export type BrowserContextDisableRecorderParams = {};
