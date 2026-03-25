@@ -445,6 +445,8 @@ Run `codegen` with `--ai-codegen` to enable AI-powered test generation features.
 When enabled, the recorder will:
 - Show a **Generate** button, **scenario name** input, and **network panel**
 - Capture and classify network requests alongside your recorded actions
+- Include request bodies (POST/PUT/PATCH) and response bodies in the prompt so AI tools can write accurate payload assertions
+- Automatically redact sensitive values — passwords, tokens, credit cards — from both request and response bodies
 - Continuously write a live session file (`.playwright-session.md`) that AI tools can read via MCP
 - On clicking **Generate Test**, copy a detailed prompt to your clipboard and save it to `.playwright-prompt.md`
 

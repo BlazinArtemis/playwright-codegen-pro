@@ -595,16 +595,19 @@ class InterceptableRequest {
     this._route = route;
     this._originalRequestRoute = route ?? redirectedFrom?._originalRequestRoute;
 
+    const requestData = requestPausedEvent ? requestPausedEvent.request : requestWillBeSentEvent.request;
     const {
       headers,
       method,
       url,
       postDataEntries = null,
-    } = requestPausedEvent ? requestPausedEvent.request : requestWillBeSentEvent.request;
+    } = requestData;
     let postDataBuffer = null;
     const entries = postDataEntries?.filter(entry => entry.bytes);
     if (entries && entries.length)
       postDataBuffer = Buffer.concat(entries.map(entry => Buffer.from(entry.bytes!, 'base64')));
+    else if (requestData.postData)
+      postDataBuffer = Buffer.from(requestData.postData, 'utf-8');
 
     this.request = new network.Request(context, frame, serviceWorker, redirectedFrom?.request || null, documentId, url, toResourceType(requestWillBeSentEvent.type || 'Other'), method, postDataBuffer,  headersOverride || headersObjectToArray(headers));
   }
