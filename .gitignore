@@ -40,3 +40,4 @@ playwright.env
 .playwright-session.md
 .playwright-prompt.md
 /firefox/
+tmp/
