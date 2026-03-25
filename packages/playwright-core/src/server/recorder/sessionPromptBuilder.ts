@@ -70,8 +70,9 @@ export function buildPrompt(session: RedactedSession, options: ExportOptions): s
         sessionSection += `  API calls (direct):\n`;
         for (const e of direct) {
           const op = e.operationName ? ` (${e.operationName})` : '';
+          const payload = e.requestBodySnippet ? ` (payload: ${e.requestBodySnippet.slice(0, 200)}...)` : '';
           const body = e.bodySnippet ? ` (body: ${e.bodySnippet.slice(0, 200)}...)` : '';
-          sessionSection += `    - ${e.method} ${e.url}${op} → ${e.status ?? 'pending'}${body}\n`;
+          sessionSection += `    - ${e.method} ${e.url}${op}${payload} → ${e.status ?? 'pending'}${body}\n`;
         }
       }
       if (pageLoad.length) {

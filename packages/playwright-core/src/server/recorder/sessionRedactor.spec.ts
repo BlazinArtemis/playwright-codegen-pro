@@ -168,4 +168,43 @@ test.describe('sessionRedactor', () => {
     expect(actions[0].networkEvents![0].operationName).toBe('LoginUser');
     expect(actions[0].networkEvents![0].bodySnippet).toContain('"password":"[redacted]"');
   });
+
+  test('redacts password in requestBodySnippet', () => {
+    const action = makeAction({
+      networkEvents: [{
+        url: '/api/login', method: 'POST', bucket: 'direct', pageGuid: 'p1',
+        firedMs: 0, isRedirect: false, aborted: false,
+        requestBodySnippet: '{"email":"user@example.com","password":"hunter2"}',
+      }],
+    });
+    const { actions, warnings } = redactSession([action], false);
+    expect(actions[0].networkEvents![0].requestBodySnippet).toContain('"password":"[redacted]"');
+    expect(actions[0].networkEvents![0].requestBodySnippet).toContain('"email":"user@example.com"');
+    expect(warnings.some(w => w.includes('request payload'))).toBe(true);
+  });
+
+  test('redacts token in requestBodySnippet', () => {
+    const action = makeAction({
+      networkEvents: [{
+        url: '/api/refresh', method: 'POST', bucket: 'direct', pageGuid: 'p1',
+        firedMs: 0, isRedirect: false, aborted: false,
+        requestBodySnippet: '{"token":"eyJhbGciOiJSUzI1NiJ9.abc"}',
+      }],
+    });
+    const { actions } = redactSession([action], false);
+    expect(actions[0].networkEvents![0].requestBodySnippet).toContain('"token":"[redacted]"');
+  });
+
+  test('clean requestBodySnippet produces no warning', () => {
+    const action = makeAction({
+      networkEvents: [{
+        url: '/api/employees', method: 'POST', bucket: 'direct', pageGuid: 'p1',
+        firedMs: 0, isRedirect: false, aborted: false,
+        requestBodySnippet: '{"name":"Alice Smith","role":"Engineer"}',
+      }],
+    });
+    const { actions, warnings } = redactSession([action], false);
+    expect(actions[0].networkEvents![0].requestBodySnippet).toBe('{"name":"Alice Smith","role":"Engineer"}');
+    expect(warnings).toHaveLength(0);
+  });
 });

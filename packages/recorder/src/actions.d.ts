@@ -170,6 +170,7 @@ export type NetworkEvent = {
   url: string;
   method: string;
   status?: number;
+  requestBodySnippet?: string; // first 500 chars of POST/PUT/PATCH/DELETE request body, already redacted
   bodySnippet?: string;     // first 500 chars of text/json/html body, already redacted
   firedMs: number;          // ms after action.startTime that request fired
   resolvedMs?: number;      // ms after action.startTime that response arrived

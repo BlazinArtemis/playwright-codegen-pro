@@ -410,3 +410,82 @@ test.describe('NetworkCapture — lifecycle', () => {
     expect(enriched[0].networkEvents).toHaveLength(1);
   });
 });
+
+// ─── Request body capture tests ───────────────────────────────────────────────
+
+test.describe('NetworkCapture — request body capture', () => {
+  test('POST with JSON body → requestBodySnippet captured', async () => {
+    const { ctx, action } = makeCapture();
+    const body = JSON.stringify({ email: 'user@example.com', password: 'secret' });
+    const req = makeRequest({ method: 'POST', url: 'http://localhost/api/login', postDataBuffer: Buffer.from(body) });
+    await fireRequest(ctx, req, makeResponse());
+    const event = (action.networkEvents ?? [])[0];
+    expect(event.bucket).toBe('direct');
+    expect(event.requestBodySnippet).toBe(body);
+  });
+
+  test('PUT with body → requestBodySnippet captured', async () => {
+    const { ctx, action } = makeCapture();
+    const body = JSON.stringify({ name: 'Alice' });
+    const req = makeRequest({ method: 'PUT', url: 'http://localhost/api/users/1', postDataBuffer: Buffer.from(body) });
+    await fireRequest(ctx, req, makeResponse());
+    expect((action.networkEvents ?? [])[0].requestBodySnippet).toBe(body);
+  });
+
+  test('PATCH with body → requestBodySnippet captured', async () => {
+    const { ctx, action } = makeCapture();
+    const body = JSON.stringify({ role: 'Manager' });
+    const req = makeRequest({ method: 'PATCH', url: 'http://localhost/api/users/1', postDataBuffer: Buffer.from(body) });
+    await fireRequest(ctx, req, makeResponse());
+    expect((action.networkEvents ?? [])[0].requestBodySnippet).toBe(body);
+  });
+
+  test('DELETE with body → requestBodySnippet captured', async () => {
+    const { ctx, action } = makeCapture();
+    const body = JSON.stringify({ ids: [1, 2, 3] });
+    const req = makeRequest({ method: 'DELETE', url: 'http://localhost/api/users', postDataBuffer: Buffer.from(body) });
+    await fireRequest(ctx, req, makeResponse());
+    expect((action.networkEvents ?? [])[0].requestBodySnippet).toBe(body);
+  });
+
+  test('DELETE without body → no requestBodySnippet', async () => {
+    const { ctx, action } = makeCapture();
+    const req = makeRequest({ method: 'DELETE', url: 'http://localhost/api/users/3', postDataBuffer: null });
+    await fireRequest(ctx, req, makeResponse());
+    expect((action.networkEvents ?? [])[0].requestBodySnippet).toBeUndefined();
+  });
+
+  test('GET request → no requestBodySnippet', async () => {
+    const { ctx, action } = makeCapture();
+    const req = makeRequest({ method: 'GET', url: 'http://localhost/api/users', postDataBuffer: Buffer.from('{}') });
+    await fireRequest(ctx, req, makeResponse());
+    expect((action.networkEvents ?? [])[0].requestBodySnippet).toBeUndefined();
+  });
+
+  test('POST to noise bucket (analytics) → no requestBodySnippet', async () => {
+    const { ctx, action } = makeCapture();
+    const req = makeRequest({ method: 'POST', url: 'https://analytics.example.com/collect', postDataBuffer: Buffer.from('{"event":"click"}') });
+    await fireRequest(ctx, req, makeResponse());
+    expect((action.networkEvents ?? [])[0].requestBodySnippet).toBeUndefined();
+  });
+
+  test('POST body > 500 chars → truncated with ...', async () => {
+    const { ctx, action } = makeCapture();
+    const longBody = JSON.stringify({ data: 'x'.repeat(600) });
+    const req = makeRequest({ method: 'POST', url: 'http://localhost/api/data', postDataBuffer: Buffer.from(longBody) });
+    await fireRequest(ctx, req, makeResponse());
+    const snippet = (action.networkEvents ?? [])[0].requestBodySnippet!;
+    expect(snippet).toHaveLength(503); // 500 chars + '...'
+    expect(snippet.endsWith('...')).toBe(true);
+  });
+
+  test('POST body exactly 500 chars → no trailing ...', async () => {
+    const { ctx, action } = makeCapture();
+    const exactBody = 'a'.repeat(500);
+    const req = makeRequest({ method: 'POST', url: 'http://localhost/api/data', postDataBuffer: Buffer.from(exactBody) });
+    await fireRequest(ctx, req, makeResponse());
+    const snippet = (action.networkEvents ?? [])[0].requestBodySnippet!;
+    expect(snippet).toBe(exactBody);
+    expect(snippet.endsWith('...')).toBe(false);
+  });
+});

@@ -266,6 +266,7 @@ export class NetworkCapture {
           aborted: false,
           status: undefined,
           resolvedMs: undefined,
+          requestBodySnippet: undefined,
           bodySnippet: undefined,
         };
         this._pending.set(request.guid, { networkEvent, targetAction: parentEntry.targetAction });
@@ -280,6 +281,17 @@ export class NetworkCapture {
     const targetAction = pageGuid ? this._findLastActionForPage(pageGuid) : null;
 
     const operationName = this._extractGraphQLOperationName(request);
+
+    let requestBodySnippet: string | undefined;
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && bucket !== 'noise') {
+      const buf = request.postDataBuffer();
+      if (buf) {
+        const text = buf.toString('utf-8');
+        if (text)
+          requestBodySnippet = text.slice(0, 500) + (text.length > 500 ? '...' : '');
+      }
+    }
+
     const networkEvent: NetworkEvent = {
       url,
       method,
@@ -289,6 +301,7 @@ export class NetworkCapture {
       isRedirect: !!request.redirectedFrom(),
       aborted: false,
       ...(operationName ? { operationName } : {}),
+      ...(requestBodySnippet ? { requestBodySnippet } : {}),
     };
 
     this._pending.set(request.guid, { networkEvent, targetAction });

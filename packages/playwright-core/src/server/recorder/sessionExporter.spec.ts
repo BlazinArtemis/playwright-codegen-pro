@@ -202,6 +202,35 @@ test.describe('buildPrompt', () => {
     const prompt = buildPrompt(makeSession([]), { ...BASE_OPTIONS, scenarioName: 'employee create' });
     expect(prompt).toContain('Name: employee create');
   });
+
+  test('request body snippet appears as (payload: ...) before → STATUS', () => {
+    const action = makeAction({
+      networkEvents: [makeNetworkEvent({
+        method: 'POST',
+        bucket: 'direct',
+        requestBodySnippet: '{"email":"user@example.com","password":"[redacted]"}',
+        bodySnippet: '{"token":"[redacted]"}',
+      })],
+    });
+    const prompt = buildPrompt(makeSession([action]), BASE_OPTIONS);
+    expect(prompt).toContain('(payload:');
+    expect(prompt).toContain('(body:');
+    // payload must appear before → and before response body
+    const payloadIdx = prompt.indexOf('(payload:');
+    const arrowIdx = prompt.indexOf('→');
+    const bodyIdx = prompt.indexOf('(body:');
+    expect(payloadIdx).toBeLessThan(arrowIdx);
+    expect(arrowIdx).toBeLessThan(bodyIdx);
+  });
+
+  test('no payload section when requestBodySnippet absent', () => {
+    const action = makeAction({
+      networkEvents: [makeNetworkEvent({ method: 'GET', bucket: 'direct', bodySnippet: '{"items":[]}' })],
+    });
+    const prompt = buildPrompt(makeSession([action]), BASE_OPTIONS);
+    expect(prompt).not.toContain('(payload:');
+    expect(prompt).toContain('(body:');
+  });
 });
 
 // Note: exportSession integration tests (chat.post null, etc.) require the compiled bundle

@@ -55,6 +55,20 @@ export function redactSession(
 
     // ── Network events: redact body snippets and strip sensitive headers ──
     for (const event of ctx.networkEvents ?? []) {
+      if (event.requestBodySnippet) {
+        const before = event.requestBodySnippet;
+        event.requestBodySnippet = event.requestBodySnippet
+            .replace(/"password"\s*:\s*"[^"]*"/g, '"password":"[redacted]"')
+            .replace(/"passwd"\s*:\s*"[^"]*"/g, '"passwd":"[redacted]"')
+            .replace(/"token"\s*:\s*"[^"]*"/g, '"token":"[redacted]"')
+            .replace(/"secret"\s*:\s*"[^"]*"/g, '"secret":"[redacted]"')
+            .replace(/Bearer\s+[A-Za-z0-9._\-]+/g, 'Bearer [redacted]')
+            .replace(/"Authorization"\s*:\s*"[^"]*"/g, '"Authorization":"[redacted]"')
+            .replace(/\b[0-9]{4}[\s\-]?[0-9]{4}[\s\-]?[0-9]{4}[\s\-]?[0-9]{4}\b/g, '[card-redacted]');
+        if (event.requestBodySnippet !== before)
+          warnings.push(`Redacted sensitive data in ${event.method} ${event.url} request payload (step ${i + 1})`);
+      }
+
       if (event.bodySnippet) {
         const before = event.bodySnippet;
         event.bodySnippet = event.bodySnippet
