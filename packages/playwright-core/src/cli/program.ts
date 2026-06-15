@@ -30,6 +30,7 @@ import { assert, getPackageManagerExecCommand } from '../utils';
 import { wrapInASCIIBox } from '../server/utils/ascii';
 import { dotenv, program } from '../utilsBundle';
 import { program as cliProgram } from '../tools/cli-client/program';
+import { decorateMCPCommand } from '../tools/mcp/program';
 
 import type { Browser } from '../client/browser';
 import type { BrowserContext } from '../client/browserContext';
@@ -358,6 +359,8 @@ Examples:
 
 addTraceCommands(program, logErrorAndExit);
 
+decorateMCPCommand(program.command('mcp').description('Start MCP server for AI tool integration'));
+
 program
     .command('cli', { hidden: true })
     .allowExcessArguments(true)
@@ -396,7 +399,7 @@ type CaptureOptions = {
   paperFormat?: string;
 };
 
-async function launchContext(options: Options, extraOptions: LaunchOptions): Promise<{ browser: Browser, browserName: string, launchOptions: LaunchOptions, contextOptions: BrowserContextOptions, context: BrowserContext, closeBrowser: () => Promise<void> }> {
+async function launchContext(options: Options, extraOptions: LaunchOptions, extraContextOptions: BrowserContextOptions = {}): Promise<{ browser: Browser, browserName: string, launchOptions: LaunchOptions, contextOptions: BrowserContextOptions, context: BrowserContext, closeBrowser: () => Promise<void> }> {
   validateOptions(options);
   const browserType = lookupBrowserType(options);
   const launchOptions: LaunchOptions = extraOptions;
@@ -406,7 +409,7 @@ async function launchContext(options: Options, extraOptions: LaunchOptions): Pro
 
   const contextOptions: BrowserContextOptions =
     // Copy the device descriptor since we have to compare and modify the options.
-    options.device ? { ...playwright.devices[options.device] } : {};
+    options.device ? { ...playwright.devices[options.device], ...extraContextOptions } : { ...extraContextOptions };
 
   // In headful mode, use host device scale factor for things to look nice.
   // In headless, keep things the way it works in Playwright by default.
@@ -575,10 +578,16 @@ async function open(options: Options, url: string | undefined) {
 async function codegen(options: Options & { target: string, output?: string, testIdAttribute?: string, aiCodegen?: boolean }, url: string | undefined) {
   const { target: language, output: outputFile, testIdAttribute: testIdAttributeName } = options;
   const tracesDir = path.join(os.tmpdir(), `playwright-recorder-trace-${Date.now()}`);
+  const videoDir = path.join(process.cwd(), '.playwright-session-video');
+  try {
+    fs.rmSync(videoDir, { recursive: true, force: true });
+  } catch {}
   const { context, browser, launchOptions, contextOptions, closeBrowser } = await launchContext(options, {
     headless: !!process.env.PWTEST_CLI_HEADLESS,
     executablePath: process.env.PWTEST_CLI_EXECUTABLE_PATH,
     tracesDir,
+  }, {
+    recordVideo: { dir: videoDir, size: { width: 1280, height: 720 } },
   });
   const donePromise = new ManualPromise<void>();
   maybeSetupTestHooks(browser, closeBrowser, donePromise);
@@ -593,7 +602,7 @@ async function codegen(options: Options & { target: string, output?: string, tes
     testIdAttributeName,
     outputFile: outputFile ? path.resolve(outputFile) : undefined,
     handleSIGINT: false,
-    aiCodegen: options.aiCodegen || !!process.env.PW_AI_CODEGEN,
+    aiCodegen: true,
   });
   await openPage(context, url);
   donePromise.resolve();

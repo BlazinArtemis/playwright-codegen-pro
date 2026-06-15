@@ -1,10 +1,10 @@
 {
   "name": "playwright-webkit",
-  "version": "1.59.0-next",
+  "version": "1.0.4",
   "description": "A high-level API to automate WebKit",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright.git"
+    "url": "git+https://github.com/BlazinArtemis/playwright-codegen-pro.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {
@@ -30,6 +30,6 @@
     "install": "node install.js"
   },
   "dependencies": {
-    "playwright-core": "1.59.0-next"
+    "playwright-codegen-pro-core": "1.0.4"
   }
 }

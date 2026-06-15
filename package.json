@@ -1,11 +1,11 @@
 {
   "name": "playwright-internal",
   "private": true,
-  "version": "1.59.0-next",
-  "description": "A high-level API to automate web browsers",
+  "version": "1.0.4",
+  "description": "AI-powered Playwright codegen with network capture, data redaction, and MCP integration",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright.git"
+    "url": "git+https://github.com/BlazinArtemis/playwright-codegen-pro.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {

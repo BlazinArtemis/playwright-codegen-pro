@@ -30,6 +30,8 @@ export interface ExportOptions {
   wsEndpoint?: string;
   pageHasWebSockets: boolean;
   mode?: 'ai-endpoint' | 'clipboard';
+  screenshots?: Map<ActionInContext, string>;
+  videoPath?: string;
 }
 
 export interface ExportResult {
@@ -64,6 +66,9 @@ export function buildPrompt(session: RedactedSession, options: ExportOptions): s
       const a = ctx.action;
       const location = (a as any).selector ? `${(a as any).selector}` : (a as any).url ?? '';
       sessionSection += `- ${a.name}: ${location} at t=${ctx.startTime}ms\n`;
+      const screenshot = options.screenshots?.get(ctx);
+      if (screenshot)
+        sessionSection += `  Screenshot: ${path.relative(process.cwd(), screenshot)}\n`;
       const direct = (ctx.networkEvents ?? []).filter(e => e.bucket === 'direct');
       const pageLoad = (ctx.networkEvents ?? []).filter(e => e.bucket === 'pageLoad');
       if (direct.length) {
@@ -100,13 +105,24 @@ export function buildPrompt(session: RedactedSession, options: ExportOptions): s
     ? '## WebSocket Note\nThis page uses WebSocket connections. Assert on UI state changes that reflect server pushes rather than trying to intercept WS frames.\n\n'
     : '';
 
+  const screenshotCount = options.screenshots?.size ?? 0;
+  let visualSection = '';
+  if (screenshotCount > 0 || options.videoPath) {
+    visualSection = '## Visual Context\n';
+    if (screenshotCount > 0)
+      visualSection += `Per-action screenshots: ${screenshotCount} file(s) under .playwright-session-screenshots/ — referenced inline below. Read them as visual context for each step.\n`;
+    if (options.videoPath)
+      visualSection += `Full session video: ${options.videoPath} (finalized when the recorder window is closed).\n`;
+    visualSection += '\n';
+  }
+
   return `# Playwright Test Generation Request
 
 ## Scenario
 Name: ${options.scenarioName}
 Target file: ${relativeOutput}
 
-## Recorded Session
+${visualSection}## Recorded Session
 ${sessionSection.trimEnd()}
 
 ${cleanupSection}

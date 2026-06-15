@@ -39,5 +39,8 @@ test-results
 playwright.env
 .playwright-session.md
 .playwright-prompt.md
+.playwright-session-screenshots/
+.playwright-session-video/
+.playwright-session.webm
 /firefox/
 tmp/

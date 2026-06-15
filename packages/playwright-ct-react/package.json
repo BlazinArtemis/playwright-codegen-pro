@@ -1,10 +1,10 @@
 {
   "name": "@playwright/experimental-ct-react",
-  "version": "1.59.0-next",
+  "version": "1.0.4",
   "description": "Playwright Component Testing for React",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright.git"
+    "url": "git+https://github.com/BlazinArtemis/playwright-codegen-pro.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {
@@ -30,7 +30,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@playwright/experimental-ct-core": "1.59.0-next",
+    "@playwright/experimental-ct-core": "1.0.4",
     "@vitejs/plugin-react": "^4.2.1"
   },
   "bin": {

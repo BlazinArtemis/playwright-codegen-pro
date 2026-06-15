@@ -143,13 +143,13 @@ const ROOT_PATH = path.join(__dirname, '..');
 const LICENCE_FILES = ['NOTICE', 'LICENSE'];
 const workspace = new Workspace(ROOT_PATH, [
   new PWPackage({
-    name: 'playwright',
+    name: 'playwright-codegen-pro',
     path: path.join(ROOT_PATH, 'packages', 'playwright'),
     // We copy README.md additionally for playwright so that it looks nice on NPM.
     files: [...LICENCE_FILES, 'README.md'],
   }),
   new PWPackage({
-    name: 'playwright-core',
+    name: 'playwright-codegen-pro-core',
     path: path.join(ROOT_PATH, 'packages', 'playwright-core'),
     files: LICENCE_FILES,
   }),

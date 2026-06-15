@@ -1,8 +1,149 @@
-# 🎭 Playwright
+# playwright-codegen-pro
 
-[![npm version](https://img.shields.io/npm/v/playwright.svg)](https://www.npmjs.com/package/playwright) <!-- GEN:chromium-version-badge -->[![Chromium version](https://img.shields.io/badge/chromium-146.0.7680.31-blue.svg?logo=google-chrome)](https://www.chromium.org/Home)<!-- GEN:stop --> <!-- GEN:firefox-version-badge -->[![Firefox version](https://img.shields.io/badge/firefox-148.0.2-blue.svg?logo=firefoxbrowser)](https://www.mozilla.org/en-US/firefox/new/)<!-- GEN:stop --> <!-- GEN:webkit-version-badge -->[![WebKit version](https://img.shields.io/badge/webkit-26.0-blue.svg?logo=safari)](https://webkit.org/)<!-- GEN:stop --> [![Join Discord](https://img.shields.io/badge/join-discord-informational)](https://aka.ms/playwright/discord)
+A fork of [Playwright](https://playwright.dev) that supercharges the codegen recorder with AI-ready output — network capture, data redaction, structured prompt export, and MCP integration.
 
-## [Documentation](https://playwright.dev) | [API reference](https://playwright.dev/docs/api/class-playwright)
+Record your browser session and get a structured prompt that any AI tool (Claude Code, Cursor, ChatGPT) can use to generate a complete, production-ready Playwright test file.
+
+## Install
+
+```bash
+npm install -g playwright-codegen-pro
+playwright-codegen-pro install chromium
+```
+
+## Usage
+
+```bash
+playwright-codegen-pro codegen https://myapp.com
+```
+
+AI features are always on. The recorder will:
+- Capture all API calls triggered by your actions (classified as direct/pageLoad/noise)
+- Capture request payloads and response bodies
+- Redact passwords, tokens, and credit card numbers automatically
+- Write a live session file (`.playwright-session.md`) updated every 250ms
+- Take a screenshot after every recorded action — saved under `.playwright-session-screenshots/` and referenced inline in the prompt
+- Record a full session video (1280×720 WebM) — finalized as `.playwright-session.webm` when the recorder window closes
+
+## Files Created During a Session
+
+| File / Directory | When | Purpose |
+|---|---|---|
+| `.playwright-session.md` | Updated live (250ms throttle) | Structured prompt with actions, API calls, screenshot paths |
+| `.playwright-session-screenshots/NNN-{action}.png` | After each action commit | Visual context for vision-capable AI |
+| `.playwright-session.webm` | After recorder closes | Full session video for vision models |
+| `.playwright-prompt.md` | When you click "Generate Test" | Snapshot copy of the prompt |
+
+### Workflow 1 — Click "Generate Test"
+
+Interact with your app, then click **Generate Test** in the recorder toolbar. The structured prompt is copied to your clipboard. Paste it into Claude, Cursor, or ChatGPT.
+
+### Workflow 2 — AI reads the session via MCP
+
+Configure the MCP server once (see below), then while codegen is running just tell your AI:
+
+> "There's a codegen session running. Read the session and write a test for it."
+
+The AI calls `recorder_get_session`, reads the live `.playwright-session.md`, and generates the test — no copy/paste needed.
+
+## MCP Setup
+
+The MCP server registers itself as **`playwright-codegen-pro`** (not `playwright`), so it sits alongside the official Playwright MCP without clashing — and your AI tool can tell them apart. On connect it sends instructions describing the recorder, so the assistant knows about `recorder_get_session` and how to turn a recording into a test without you explaining it.
+
+> Use a **distinct key** (`playwright-codegen-pro`) in your config. Reusing the `playwright` key collides with the official Playwright MCP and is what makes AI tools think the server is "fake" or fall back to the wrong one.
+
+### Claude Code
+
+One-liner (recommended):
+
+```bash
+claude mcp add playwright-codegen-pro -- npx playwright-codegen-pro mcp
+```
+
+Or edit `~/.claude/settings.json` manually:
+
+```json
+{
+  "mcpServers": {
+    "playwright-codegen-pro": {
+      "command": "npx",
+      "args": ["playwright-codegen-pro", "mcp"]
+    }
+  }
+}
+```
+
+### Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`)
+
+```json
+{
+  "mcpServers": {
+    "playwright-codegen-pro": {
+      "command": "npx",
+      "args": ["playwright-codegen-pro", "mcp"]
+    }
+  }
+}
+```
+
+### VS Code (`.vscode/mcp.json` or user settings)
+
+```json
+{
+  "servers": {
+    "playwright-codegen-pro": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["playwright-codegen-pro", "mcp"]
+    }
+  }
+}
+```
+
+After adding it, restart/reload your AI tool and confirm the `recorder_get_session` tool is listed. If the assistant claims the server doesn't exist, it almost always means the config wasn't picked up (wrong file, not reloaded) — not that the package is missing.
+
+## What the prompt includes
+
+- Every recorded action (click, fill, navigate) with timing
+- API calls linked to each action — method, URL, request payload, response body
+- Sensitive values redacted (`[redacted]` for passwords and tokens)
+- Playwright best practices baked in (no `waitForTimeout`, use `getByRole`, wrap clicks with `waitForResponse`)
+- Data cleanup instructions when POST 201 creates test data
+
+## Example output
+
+```
+## Visual Context
+Per-action screenshots: 3 file(s) under .playwright-session-screenshots/ — referenced inline below. Read them as visual context for each step.
+Full session video: .playwright-session.webm (finalized when the recorder window is closed).
+
+## Recorded Session
+### Page: https://myapp.com/login
+- click: Sign In button at t=1200ms
+  Screenshot: .playwright-session-screenshots/003-click.png
+  API calls (direct):
+    - POST /api/auth/login (payload: {"email":"user@example.com","password":"[redacted]"}) -> 200
+      (body: {"token":"[redacted]","user":{"email":"user@example.com"}})
+    - GET /api/dashboard -> 200 (body: {"items":[...]})
+```
+
+## MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `recorder_get_session` | Read the current or last recorded session |
+| `browser_navigate` | Navigate to a URL |
+| `browser_click` | Click an element |
+| `browser_snapshot` | Get the accessibility tree |
+| + 30 more | Full Playwright browser automation via MCP |
+
+## Based on
+
+Playwright `1.59.0-next` — all standard Playwright APIs and test runner features work as normal.
+
+---
+
+## [Playwright Documentation](https://playwright.dev) | [API reference](https://playwright.dev/docs/api/class-playwright)
 
 Playwright is a framework for Web Testing and Automation. It allows testing [Chromium](https://www.chromium.org/Home)<sup>1</sup>, [Firefox](https://www.mozilla.org/en-US/firefox/new/) and [WebKit](https://webkit.org/) with a single API. Playwright is built to enable cross-browser web automation that is **ever-green**, **capable**, **reliable**, and **fast**.
 

@@ -1,2 +1,7 @@
-src
-bundles
+src/
+*.spec.ts
+*.spec.js
+tests/
+__tests__/
+.eslintrc*
+tsconfig*.json

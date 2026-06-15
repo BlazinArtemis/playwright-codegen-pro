@@ -1,10 +1,10 @@
 {
-  "name": "playwright",
-  "version": "1.59.0-next",
-  "description": "A high-level API to automate web browsers",
+  "name": "playwright-codegen-pro",
+  "version": "1.0.4",
+  "description": "AI-powered Playwright codegen with network capture, data redaction, and MCP integration",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright.git"
+    "url": "git+https://github.com/BlazinArtemis/playwright-codegen-pro.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {
@@ -53,6 +53,7 @@
     }
   },
   "bin": {
+    "playwright-codegen-pro": "cli.js",
     "playwright": "cli.js"
   },
   "author": {
@@ -60,7 +61,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "playwright-core": "1.59.0-next"
+    "playwright-core": "npm:playwright-codegen-pro-core@1.0.4"
   },
   "optionalDependencies": {
     "fsevents": "2.3.2"

@@ -30,6 +30,18 @@ import type * as playwright from '../../..';
 
 const version = require('../../../package.json').version;
 
+// Server-level instructions surfaced to the AI client on initialize, so the
+// assistant understands this is the Playwright Codegen Pro recorder bridge and
+// knows how to turn a recording into a test without the user having to explain it.
+const codegenProInstructions = `This is the Playwright Codegen Pro MCP server — an AI-ready fork of the Playwright recorder.
+
+When the user mentions a "codegen session", "recording", or asks you to "write the test" for what they just recorded:
+1. Call the \`recorder_get_session\` tool to read the live recording. It returns the recorded user actions, the network requests they triggered (classified as direct API calls / page-load context / noise), request payloads and response bodies, screenshot paths, and data-cleanup hints. Secrets (passwords, tokens, credit cards) are already redacted.
+2. Generate a complete Playwright test from that context, following the "Best Practices" section embedded in the returned prompt (web-first assertions, role-based locators, waitForResponse around API-triggering clicks, afterEach cleanup for created data, no hard waits).
+3. Save the test where the prompt indicates (the target file is named in the session).
+
+The session is produced by \`playwright-codegen-pro codegen <url>\` (AI capture is always on). \`recorder_get_session\` works while recording (reads \`.playwright-session.md\`) and after the user clicks "Generate Test" (reads \`.playwright-prompt.md\`). If it reports no session, ask the user to start a codegen recording first.`;
+
 export function decorateMCPCommand(command: Command) {
   command
       .option('--allowed-hosts <hosts...>', 'comma-separated list of hosts this server is allowed to serve from. Defaults to the host the server is bound to. Pass \'*\' to disable the host check.', commaSeparatedList)
@@ -95,9 +107,10 @@ export function decorateMCPCommand(command: Command) {
         const tools = filteredTools(config);
         if (config.extension) {
           const serverBackendFactory: mcpServer.ServerBackendFactory = {
-            name: 'Playwright w/ extension',
-            nameInConfig: 'playwright-extension',
+            name: 'Playwright Codegen Pro w/ extension',
+            nameInConfig: 'playwright-codegen-pro-extension',
             version,
+            instructions: codegenProInstructions,
             toolSchemas: tools.map(tool => tool.schema),
             create: async (clientInfo: ClientInfo) => {
               const browser = await createBrowser(config, clientInfo);
@@ -115,9 +128,10 @@ export function decorateMCPCommand(command: Command) {
         let clientCount = 0;
 
         const factory: mcpServer.ServerBackendFactory = {
-          name: 'Playwright',
-          nameInConfig: 'playwright',
+          name: 'Playwright Codegen Pro',
+          nameInConfig: 'playwright-codegen-pro',
           version,
+          instructions: codegenProInstructions,
           toolSchemas: tools.map(tool => tool.schema),
           create: async (clientInfo: ClientInfo) => {
             if (useSharedBrowser && clientCount === 0)

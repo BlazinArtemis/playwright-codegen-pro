@@ -1,10 +1,10 @@
 {
   "name": "@playwright/experimental-ct-vue",
-  "version": "1.59.0-next",
+  "version": "1.0.4",
   "description": "Playwright Component Testing for Vue",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright.git"
+    "url": "git+https://github.com/BlazinArtemis/playwright-codegen-pro.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {
@@ -30,7 +30,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@playwright/experimental-ct-core": "1.59.0-next",
+    "@playwright/experimental-ct-core": "1.0.4",
     "@vitejs/plugin-vue": "^5.2.0"
   },
   "bin": {

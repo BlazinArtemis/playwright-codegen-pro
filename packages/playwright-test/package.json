@@ -1,10 +1,10 @@
 {
   "name": "@playwright/test",
-  "version": "1.59.0-next",
+  "version": "1.0.4",
   "description": "A high-level API to automate web browsers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright.git"
+    "url": "git+https://github.com/BlazinArtemis/playwright-codegen-pro.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {

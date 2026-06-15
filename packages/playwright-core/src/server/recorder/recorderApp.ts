@@ -67,6 +67,9 @@ export class RecorderApp {
   private _inspectedContext: BrowserContext | null = null;
   private _scenarioName: string = 'my scenario';
   private _throttledSessionFile: ThrottledFile | null = null;
+  private _screenshotDir: string | null = null;
+  private _actionScreenshots: Map<actions.ActionInContext, string> = new Map();
+  private _screenshotCounter: number = 0;
 
   private constructor(recorder: Recorder, params: RecorderAppParams, page: Page, wsEndpointForTest: string | undefined) {
     this._page = page;
@@ -85,8 +88,16 @@ export class RecorderApp {
 
     this._aiCodegen = !!params.aiCodegen;
     this._throttledOutputFile = params.outputFile ? new ThrottledFile(params.outputFile) : null;
-    if (this._aiCodegen)
+    if (this._aiCodegen) {
       this._throttledSessionFile = new ThrottledFile(path.join(process.cwd(), '.playwright-session.md'));
+      this._screenshotDir = path.join(process.cwd(), '.playwright-session-screenshots');
+      try {
+        fs.rmSync(this._screenshotDir, { recursive: true, force: true });
+      } catch {}
+      try {
+        fs.mkdirSync(this._screenshotDir, { recursive: true });
+      } catch {}
+    }
     this._primaryGeneratorId = process.env.TEST_INSPECTOR_LANGUAGE || params.language || determinePrimaryGeneratorId(params.sdkLanguage);
     this._selectedGeneratorId = this._primaryGeneratorId;
     for (const languageGenerator of languageSet()) {
@@ -128,6 +139,7 @@ export class RecorderApp {
         this._networkCapture?.dispose();
         this._networkCapture = null;
         this._recorder.close();
+        void this._finalizeVideo();
         // Close inspected context first so the CLI's page-close handler can call closeBrowser()
         inspectedContext.close({ reason: 'Recorder window closed' }).catch(() => {});
         this._page.browserContext.close({ reason: 'Recorder window closed' }).catch(() => {});
@@ -296,6 +308,7 @@ export class RecorderApp {
       this._throttledSessionFile?.flush();
       this._networkCapture?.dispose();
       this._networkCapture = null;
+      void this._finalizeVideo();
       this._page.browserContext.close({ reason: 'Recorder window closed' }).catch(() => {});
     });
 
@@ -336,6 +349,29 @@ export class RecorderApp {
     this._actions.push(action);
     this._networkCapture?.onActionAdded(action);
     this._updateActions('reveal');
+    void this._captureScreenshotForAction(action);
+  }
+
+  private async _captureScreenshotForAction(action: actions.ActionInContext) {
+    if (!this._screenshotDir || !this._inspectedContext)
+      return;
+    const page = findPageByGuid(this._inspectedContext, action.frame.pageGuid);
+    if (!page)
+      return;
+    const index = ++this._screenshotCounter;
+    const filename = `${String(index).padStart(3, '0')}-${action.action.name}.png`;
+    const filepath = path.join(this._screenshotDir, filename);
+    try {
+      const controller = new ProgressController();
+      await controller.run(async progress => {
+        const buffer = await page.screenshot(progress, { type: 'png', fullPage: false });
+        await fs.promises.writeFile(filepath, buffer);
+      });
+      this._actionScreenshots.set(action, filepath);
+      this._updateActions();
+    } catch {
+      // Page may have closed or screenshot failed — non-fatal
+    }
   }
 
   private _onSignalAdded(signal: actions.SignalInContext) {
@@ -411,6 +447,8 @@ export class RecorderApp {
         outputFile: 'tests/' + this._scenarioName.replace(/\s+/g, '-') + '.spec.ts',
         mode: 'clipboard',
         pageHasWebSockets: false,
+        screenshots: this._actionScreenshots,
+        videoPath: this._aiCodegen ? '.playwright-session.webm' : undefined,
       });
       this._throttledSessionFile.setContent(prompt);
     }
@@ -454,6 +492,8 @@ export class RecorderApp {
         outputFile,
         mode: 'clipboard',
         pageHasWebSockets: false,
+        screenshots: this._actionScreenshots,
+        videoPath: this._aiCodegen ? '.playwright-session.webm' : undefined,
       });
 
       const promptFilePath = path.join(process.cwd(), '.playwright-prompt.md');
@@ -469,6 +509,28 @@ export class RecorderApp {
       });
     } catch (error: any) {
       this._emitGenerationStatus({ status: 'error', message: String(error?.message ?? error), progress: 0 });
+    }
+  }
+
+  private async _finalizeVideo(): Promise<void> {
+    if (!this._aiCodegen)
+      return;
+    const videoDir = path.join(process.cwd(), '.playwright-session-video');
+    const finalPath = path.join(process.cwd(), '.playwright-session.webm');
+    // Wait briefly for video file to flush after context close
+    for (let attempt = 0; attempt < 10; attempt++) {
+      try {
+        const files = await fs.promises.readdir(videoDir);
+        const webmFile = files.find(f => f.endsWith('.webm'));
+        if (webmFile) {
+          await fs.promises.rename(path.join(videoDir, webmFile), finalPath);
+          await fs.promises.rm(videoDir, { recursive: true, force: true }).catch(() => {});
+          return;
+        }
+      } catch {
+        // Directory might not exist yet
+      }
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
 

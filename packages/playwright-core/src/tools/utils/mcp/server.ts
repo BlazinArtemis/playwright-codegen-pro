@@ -71,6 +71,9 @@ export type ServerBackendFactory = {
   name: string;
   nameInConfig: string;
   version: string;
+  // Optional server-level instructions returned to the MCP client on initialize.
+  // Used to tell AI tools what this server is for and how to use it.
+  instructions?: string;
   toolSchemas: ToolSchema<any>[];
   create: (clientInfo: ClientInfo) => Promise<ServerBackend>;
   disposed: (backend: ServerBackend) => Promise<void>;
@@ -85,7 +88,8 @@ export function createServer(name: string, version: string, factory: ServerBacke
   const server = new mcpBundle.Server({ name, version }, {
     capabilities: {
       tools: {},
-    }
+    },
+    instructions: factory.instructions,
   });
 
   server.setRequestHandler(mcpBundle.ListToolsRequestSchema, async () => {
