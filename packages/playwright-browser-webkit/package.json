@@ -1,6 +1,6 @@
 {
   "name": "@playwright/browser-webkit",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Playwright package that automatically installs WebKit",
   "repository": {
     "type": "git",
@@ -27,6 +27,6 @@
     "install": "node install.js"
   },
   "dependencies": {
-    "playwright-codegen-pro-core": "1.0.4"
+    "playwright-codegen-pro-core": "1.0.5"
   }
 }
