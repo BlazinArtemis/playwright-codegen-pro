@@ -57,6 +57,11 @@ function truncUrl(url: string): string {
   return url.length > MAX_URL_LEN ? url.slice(0, MAX_URL_LEN) + '…' : url;
 }
 
+/** Turn a human flow name into a safe spec filename stem, e.g. "Login Flow" → "login-flow". */
+export function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'mcp-session';
+}
+
 export class McpSessionRecorder {
   private _options: McpRecorderOptions;
   private _network: McpNetworkCapture;
@@ -66,12 +71,41 @@ export class McpSessionRecorder {
   private _sessionFile: string;
   private _writeTimer: NodeJS.Timeout | undefined;
   private _disposed = false;
+  private readonly _defaultScenario: string;
+  private readonly _defaultSpecFile: string;
 
   constructor(context: playwright.BrowserContext, options: McpRecorderOptions) {
     this._options = options;
+    this._defaultScenario = options.scenarioName;
+    this._defaultSpecFile = options.specFile;
     this._sessionFile = path.join(options.cwd, '.playwright-session.md');
     this._network = new McpNetworkCapture(context, () => this._current, () => this._scheduleWrite());
     this._network.start();
+  }
+
+  /**
+   * Begin a fresh recording. Clears accumulated actions so the next flow becomes its own
+   * test. With a name, the draft is written to tests/<slug>.spec.ts (so back-to-back flows
+   * each get their own file); without a name, resets to the default mcp-session.spec.ts.
+   * Returns the relative path of the spec the new flow will be written to.
+   */
+  reset(name?: string): string {
+    this._actions = [];
+    this._current = null;
+    this._sessionStart = Date.now();
+    if (name) {
+      this._options.scenarioName = name;
+      this._options.specFile = path.join(this._options.cwd, 'tests', `${slugify(name)}.spec.ts`);
+    } else {
+      this._options.scenarioName = this._defaultScenario;
+      this._options.specFile = this._defaultSpecFile;
+    }
+    if (this._writeTimer) {
+      clearTimeout(this._writeTimer);
+      this._writeTimer = undefined;
+    }
+    this._writeFiles();
+    return path.relative(this._options.cwd, this._options.specFile);
   }
 
   /** Called before a tool runs, so network events attribute to it. */

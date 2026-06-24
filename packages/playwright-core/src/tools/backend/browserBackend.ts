@@ -58,6 +58,7 @@ export class BrowserBackend implements ServerBackend {
       specFile: path.join(cwd, 'tests', 'mcp-session.spec.ts'),
       secrets: this._config.secrets,
     });
+    this._context.mcpRecorder = this._recorder;
   }
 
   async dispose() {

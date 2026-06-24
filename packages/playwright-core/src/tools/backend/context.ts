@@ -27,6 +27,7 @@ import { eventsHelper } from '../../server/utils/eventsHelper';
 
 import type * as playwright from '../../..';
 import type { SessionLog } from './sessionLog';
+import type { McpSessionRecorder } from './mcpSessionRecorder';
 import type { Disposable } from '../../server/utils/disposable';
 import type { ToolCapability } from './tool';
 
@@ -92,6 +93,8 @@ export class Context {
   readonly config: ContextConfig;
   readonly sessionLog: SessionLog | undefined;
   readonly options: ContextOptions;
+  // Live MCP recorder, set by BrowserBackend. Lets tools (e.g. recorder_reset) control recording.
+  mcpRecorder: McpSessionRecorder | undefined;
   private _rawBrowserContext: playwright.BrowserContext;
   private _browserContextPromise: Promise<playwright.BrowserContext> | undefined;
   private _tabs: Tab[] = [];

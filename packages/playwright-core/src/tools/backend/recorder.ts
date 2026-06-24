@@ -63,4 +63,30 @@ const recorderGetSession = defineTool({
   },
 });
 
-export default [recorderGetSession];
+const recorderReset = defineTool({
+  capability: 'core',
+
+  schema: {
+    name: 'recorder_reset',
+    title: 'Start a new recording',
+    description: 'Start a fresh recording, clearing the accumulated actions so the next flow becomes its own clean test. Call this between independent flows when testing or documenting a site back-to-back. With a `name`, the draft test is written to tests/<name>.spec.ts and the test is named accordingly (each flow gets its own file); without a name, it resets to the default tests/mcp-session.spec.ts. The previous flow\'s spec file is left in place.',
+    inputSchema: z.object({
+      name: z.string().optional().describe('Name for the new flow, e.g. "login" or "checkout". Becomes the test name and spec filename tests/<name>.spec.ts.'),
+    }),
+    type: 'readOnly',
+  },
+
+  handle: async (context, params, response) => {
+    const recorder = context.mcpRecorder;
+    if (!recorder) {
+      response.addTextResult('Live recording is not active for this server.');
+      return;
+    }
+    const specFile = recorder.reset(params.name);
+    response.addTextResult(params.name
+      ? `Started new recording "${params.name}". Subsequent actions are recorded into ${specFile} (and .playwright-session.md).`
+      : `Recording reset. Subsequent actions are recorded into ${specFile} (and .playwright-session.md).`);
+  },
+});
+
+export default [recorderGetSession, recorderReset];

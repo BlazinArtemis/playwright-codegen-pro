@@ -59,6 +59,12 @@ The agent drives the browser **live** through the MCP browser tools (`browser_na
 
 When the agent is done it calls `recorder_get_session` and turns its own session into a polished final test — no writing a script and iterating run-fail-fix. The exploration *is* the recording.
 
+**Back-to-back flows.** To record several independent flows in one MCP session, call `recorder_reset` between them so each becomes its own clean test instead of piling into one. Pass a name to control the file:
+
+> "Test the login flow, then `recorder_reset` named *checkout* and test the checkout flow."
+
+`recorder_reset({ name: "login" })` writes that flow's draft to `tests/login.spec.ts`; the next `recorder_reset({ name: "checkout" })` starts `tests/checkout.spec.ts`. The previous flow's file is left in place.
+
 ## MCP Setup
 
 The MCP server registers itself as **`playwright-codegen-pro`** (not `playwright`), so it sits alongside the official Playwright MCP without clashing — and your AI tool can tell them apart. On connect it sends instructions describing the recorder, so the assistant knows about `recorder_get_session` and how to turn a recording into a test without you explaining it.
@@ -145,6 +151,7 @@ Full session video: .playwright-session.webm (finalized when the recorder window
 | Tool | Description |
 |------|-------------|
 | `recorder_get_session` | Read the current or last recorded session |
+| `recorder_reset` | Start a fresh recording (optionally named) — for back-to-back flows, each its own test |
 | `browser_navigate` | Navigate to a URL |
 | `browser_click` | Click an element |
 | `browser_snapshot` | Get the accessibility tree |

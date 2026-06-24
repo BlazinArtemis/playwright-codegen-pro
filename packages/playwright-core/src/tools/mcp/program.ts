@@ -44,6 +44,8 @@ Recommended workflow to "write a test for X":
 2. Call \`recorder_get_session\` to read back the accumulated session.
 3. Produce a polished final test from it, following the "Best Practices" in the returned prompt (web-first assertions, role-based locators, waitForResponse around API-triggering clicks, afterEach cleanup for created data, no hard waits). Save it to the target file named in the session.
 
+Testing or documenting multiple flows back-to-back: call \`recorder_reset\` between flows so each becomes its own clean test rather than piling into one. Pass a name (e.g. \`recorder_reset({ name: "login" })\`) to write that flow's draft to \`tests/login.spec.ts\`. Typical loop: drive flow A → recorder_get_session → recorder_reset({ name: "checkout" }) → drive flow B → recorder_get_session → ...
+
 \`recorder_get_session\` also reads sessions from a separate \`playwright-codegen-pro codegen <url>\` run (\`.playwright-session.md\` live, or \`.playwright-prompt.md\` after the user clicks "Generate Test"). Secrets are redacted in all cases.`;
 
 export function decorateMCPCommand(command: Command) {
