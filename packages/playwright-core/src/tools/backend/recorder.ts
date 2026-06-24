@@ -26,7 +26,7 @@ const recorderGetSession = defineTool({
   schema: {
     name: 'recorder_get_session',
     title: 'Get recorder session prompt',
-    description: 'Read the Playwright recorder session prompt. Returns recorded actions, network events, and instructions for generating a Playwright test. Available live during recording (via .playwright-session.md) or after clicking "Generate Test" (via .playwright-prompt.md). Requires `npx playwright codegen --ai-codegen`.',
+    description: 'Read the Playwright recorder session prompt. Returns recorded actions, network events (classified as direct/pageLoad/noise), redacted payloads, and instructions for generating a Playwright test. Two sources feed this: (1) browser tools you drive through THIS MCP are recorded live into .playwright-session.md, with a runnable draft test written to tests/mcp-session.spec.ts; (2) a separate `playwright-codegen-pro codegen <url>` recording (.playwright-session.md live, or .playwright-prompt.md after "Generate Test"). Call this after driving the browser to turn the session into a polished test.',
     inputSchema: z.object({
       path: z.string().optional().describe(
           'Path to the prompt file. Defaults to checking .playwright-session.md (live) then .playwright-prompt.md in the current working directory.'
@@ -36,7 +36,7 @@ const recorderGetSession = defineTool({
   },
 
   handle: async (context, params, response) => {
-    const cwd = context.options.cwd;
+    const cwd = context.options.cwd || process.cwd();
     if (params.path) {
       try {
         const content = await fs.promises.readFile(params.path, 'utf-8');

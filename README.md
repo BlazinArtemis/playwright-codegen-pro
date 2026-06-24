@@ -46,6 +46,19 @@ Configure the MCP server once (see below), then while codegen is running just te
 
 The AI calls `recorder_get_session`, reads the live `.playwright-session.md`, and generates the test — no copy/paste needed.
 
+### Workflow 3 — Agent drives the browser via MCP (live recording)
+
+No human recorder needed. Configure the MCP server (see below) and tell your AI:
+
+> "Use the playwright-codegen-pro MCP to log in and create a project, then write a test for it."
+
+The agent drives the browser **live** through the MCP browser tools (`browser_navigate`, `browser_click`, `browser_type`, …), reading each step's snapshot to decide the next move. Recording is **always-on**: every action the agent fires is captured automatically into:
+
+- `.playwright-session.md` — the live prompt (actions + classified API calls + redacted payloads)
+- `tests/mcp-session.spec.ts` — a runnable draft test that grows with each action
+
+When the agent is done it calls `recorder_get_session` and turns its own session into a polished final test — no writing a script and iterating run-fail-fix. The exploration *is* the recording.
+
 ## MCP Setup
 
 The MCP server registers itself as **`playwright-codegen-pro`** (not `playwright`), so it sits alongside the official Playwright MCP without clashing — and your AI tool can tell them apart. On connect it sends instructions describing the recorder, so the assistant knows about `recorder_get_session` and how to turn a recording into a test without you explaining it.

@@ -35,12 +35,16 @@ const version = require('../../../package.json').version;
 // knows how to turn a recording into a test without the user having to explain it.
 const codegenProInstructions = `This is the Playwright Codegen Pro MCP server — an AI-ready fork of the Playwright recorder.
 
-When the user mentions a "codegen session", "recording", or asks you to "write the test" for what they just recorded:
-1. Call the \`recorder_get_session\` tool to read the live recording. It returns the recorded user actions, the network requests they triggered (classified as direct API calls / page-load context / noise), request payloads and response bodies, screenshot paths, and data-cleanup hints. Secrets (passwords, tokens, credit cards) are already redacted.
-2. Generate a complete Playwright test from that context, following the "Best Practices" section embedded in the returned prompt (web-first assertions, role-based locators, waitForResponse around API-triggering clicks, afterEach cleanup for created data, no hard waits).
-3. Save the test where the prompt indicates (the target file is named in the session).
+You can BUILD a test by driving the browser live: every browser tool you call (browser_navigate, browser_click, browser_type, ...) is recorded automatically. As you act, the server writes:
+- .playwright-session.md — a structured prompt: each action, the network requests it triggered (classified as direct API calls / page-load context / noise), redacted request payloads and response bodies, and data-cleanup hints.
+- tests/mcp-session.spec.ts — a runnable draft test that grows with each action.
 
-The session is produced by \`playwright-codegen-pro codegen <url>\` (AI capture is always on). \`recorder_get_session\` works while recording (reads \`.playwright-session.md\`) and after the user clicks "Generate Test" (reads \`.playwright-prompt.md\`). If it reports no session, ask the user to start a codegen recording first.`;
+Recommended workflow to "write a test for X":
+1. Drive the site with the browser tools to perform the scenario, reading each tool's snapshot to decide the next step. No need to write or run a script — the recording captures what you do.
+2. Call \`recorder_get_session\` to read back the accumulated session.
+3. Produce a polished final test from it, following the "Best Practices" in the returned prompt (web-first assertions, role-based locators, waitForResponse around API-triggering clicks, afterEach cleanup for created data, no hard waits). Save it to the target file named in the session.
+
+\`recorder_get_session\` also reads sessions from a separate \`playwright-codegen-pro codegen <url>\` run (\`.playwright-session.md\` live, or \`.playwright-prompt.md\` after the user clicks "Generate Test"). Secrets are redacted in all cases.`;
 
 export function decorateMCPCommand(command: Command) {
   command

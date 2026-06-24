@@ -42,5 +42,6 @@ playwright.env
 .playwright-session-screenshots/
 .playwright-session-video/
 .playwright-session.webm
+.playwright-mcp/
 /firefox/
 tmp/

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+import path from 'path';
+
 import { Context } from './context';
-import { Response } from './response';
+import { Response, parseResponse } from './response';
 import { SessionLog } from './sessionLog';
+import { McpSessionRecorder } from './mcpSessionRecorder';
 import { debug } from '../../utilsBundle';
 
 import type { ContextConfig } from './context';
@@ -29,6 +32,7 @@ export class BrowserBackend implements ServerBackend {
   private _tools: Tool[];
   private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;
+  private _recorder: McpSessionRecorder | undefined;
   private _config: ContextConfig;
   readonly browserContext: playwright.BrowserContext;
 
@@ -45,9 +49,19 @@ export class BrowserBackend implements ServerBackend {
       sessionLog: this._sessionLog,
       cwd: clientInfo.cwd,
     });
+    // Always-on live recording: every browser tool the agent fires is captured into
+    // .playwright-session.md (read by recorder_get_session) and a runnable draft spec.
+    const cwd = clientInfo.cwd || process.cwd();
+    this._recorder = new McpSessionRecorder(this.browserContext, {
+      cwd,
+      scenarioName: 'Recorded via Playwright Codegen Pro MCP',
+      specFile: path.join(cwd, 'tests', 'mcp-session.spec.ts'),
+      secrets: this._config.secrets,
+    });
   }
 
   async dispose() {
+    await this._recorder?.dispose().catch(e => debug('pw:tools:error')(e));
     await this._context?.dispose().catch(e => debug('pw:tools:error')(e));
   }
 
@@ -65,12 +79,15 @@ export class BrowserBackend implements ServerBackend {
     const context = this._context!;
     const response = new Response(context, name, parsedArguments, cwd);
     context.setRunningTool(name);
+    this._recorder?.beginAction(name);
     let responseObject: mcpServer.CallToolResult;
     try {
       await tool.handle(context, parsedArguments, response);
       responseObject = await response.serialize();
       this._sessionLog?.logResponse(name, parsedArguments, responseObject);
+      this._recordAction(responseObject, cwd);
     } catch (error: any) {
+      this._recorder?.completeAction(undefined);
       return {
         content: [{ type: 'text' as const, text: `### Error\n${String(error)}` }],
         isError: true,
@@ -79,5 +96,14 @@ export class BrowserBackend implements ServerBackend {
       context.setRunningTool(undefined);
     }
     return responseObject;
+  }
+
+  private _recordAction(responseObject: mcpServer.CallToolResult, cwd: string | undefined): void {
+    if (!this._recorder)
+      return;
+    const parsed = parseResponse(responseObject, cwd);
+    const pageUrl = parsed?.page?.match(/Page URL:\s*(\S+)/)?.[1];
+    const pageTitle = parsed?.page?.match(/Page Title:\s*(.+)/)?.[1]?.trim();
+    this._recorder.completeAction(parsed?.code, pageUrl, pageTitle);
   }
 }
