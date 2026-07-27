@@ -49,7 +49,16 @@ const recorderGetSession = defineTool({
         return;
       }
     }
-    // Try live session file first, then exported prompt file
+    // Prefer the live in-memory session recorded through THIS MCP. Reading it directly
+    // avoids depending on the throttled .playwright-session.md write having landed in a
+    // cwd this tool can read — that file write is best-effort and silently fails on
+    // non-writable or unexpected server cwds, which otherwise looks like an empty session.
+    const livePrompt = context.mcpRecorder?.getSessionPrompt();
+    if (livePrompt) {
+      response.addTextResult(livePrompt);
+      return;
+    }
+    // Fall back to files: a live codegen session, then an exported prompt.
     for (const file of [path.join(cwd, '.playwright-session.md'), path.join(cwd, '.playwright-prompt.md')]) {
       try {
         const content = await fs.promises.readFile(file, 'utf-8');
@@ -59,7 +68,7 @@ const recorderGetSession = defineTool({
         // try next
       }
     }
-    response.addTextResult('No recorder session found. Run `npx playwright codegen --ai-codegen`, record actions, and the session will be available here automatically.');
+    response.addTextResult(`No recorder session found (checked the live in-memory recording and ${cwd}). If you are driving the browser through this MCP, call browser_* tools first, then retry. Otherwise run \`npx playwright-codegen-pro codegen <url>\`, record actions, and the session will appear here automatically.`);
   },
 });
 

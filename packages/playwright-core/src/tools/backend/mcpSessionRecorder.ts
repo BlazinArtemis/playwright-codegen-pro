@@ -158,6 +158,18 @@ export class McpSessionRecorder {
     this._scheduleWrite();
   }
 
+  /**
+   * The live session prompt built from the in-memory actions (redacted), or undefined if
+   * nothing has been recorded yet. Lets recorder_get_session read the session it drove
+   * directly, instead of depending on the throttled .playwright-session.md write having
+   * landed in a cwd the tool can read (it silently fails on non-writable/unexpected cwds).
+   */
+  getSessionPrompt(): string | undefined {
+    if (!this._actions.length)
+      return undefined;
+    return this._redact(this._buildPrompt());
+  }
+
   async dispose(): Promise<void> {
     if (this._disposed)
       return;
