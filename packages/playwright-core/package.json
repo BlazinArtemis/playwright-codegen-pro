@@ -1,6 +1,6 @@
 {
   "name": "playwright-codegen-pro-core",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Core engine for playwright-codegen-pro — AI-powered Playwright codegen with network capture and MCP integration",
   "repository": {
     "type": "git",
