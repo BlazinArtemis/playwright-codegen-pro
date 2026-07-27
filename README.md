@@ -121,6 +121,26 @@ Or edit `~/.claude/settings.json` manually:
 
 After adding it, restart/reload your AI tool and confirm the `recorder_get_session` tool is listed. If the assistant claims the server doesn't exist, it almost always means the config wasn't picked up (wrong file, not reloaded) — not that the package is missing.
 
+### Teach your AI tool the workflow (skill)
+
+The server sends its workflow as MCP `instructions` on connect and prints a one-line reminder on the first browser action — but not every client forwards `instructions` to the model, which is why some assistants drive the browser fine yet never call `recorder_get_session`. For a **reliable** playbook, install the portable skill at [`.claude/skills/playwright-codegen-pro/SKILL.md`](.claude/skills/playwright-codegen-pro/SKILL.md):
+
+| Tool | Where to put it |
+|------|-----------------|
+| Claude Code / Claude apps | already a skill — loads automatically from `.claude/skills/` |
+| Cursor | copy the body into `.cursor/rules/playwright-codegen-pro.mdc` |
+| GitHub Copilot | append to `.github/copilot-instructions.md` |
+| Cline / Windsurf / Aider / other | append to `AGENTS.md` (or the tool's rules file) |
+
+It's one markdown file; the content is what matters, not the tool.
+
+### Troubleshooting instantiation
+
+- **Assistant thinks it's the "fake" / wrong Playwright server, or never records.** Almost always the tool didn't get the workflow — install the skill above. The tell: only `browser_*` tools are listed and no `recorder_get_session` means you're on the *standard* Playwright MCP, not this one.
+- **Server "fails to start" on first use.** Bare `npx playwright-codegen-pro` downloads the package on first run, which can exceed the client's startup timeout. **Install it once globally** (`npm install -g playwright-codegen-pro`) so `npx` resolves instantly, and optionally **pin the version** in your config (`"args": ["playwright-codegen-pro@1.0.6", "mcp"]`) so it can't drift.
+- **First `browser_navigate` errors / no browser launches.** Browsers install separately: run `playwright-codegen-pro install chromium` once.
+- **Also use upstream Playwright? Install this fork per-project, not globally.** This package ships a full `playwright` command (test runner, `codegen`, `install`) plus a `playwright-codegen-pro` command. Two *global* installs fight over the `playwright` name (last one wins); a project-local devDependency keeps it scoped, since `npx`/npm-scripts resolve the local `.bin/playwright` first. In MCP configs, always use the `playwright-codegen-pro mcp` command so the server is unambiguous.
+
 ## What the prompt includes
 
 - Every recorded action (click, fill, navigate) with timing

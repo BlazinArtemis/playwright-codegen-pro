@@ -87,6 +87,7 @@ export class BrowserBackend implements ServerBackend {
       responseObject = await response.serialize();
       this._sessionLog?.logResponse(name, parsedArguments, responseObject);
       this._recordAction(responseObject, cwd);
+      this._maybeAnnounceRecording(name, responseObject);
     } catch (error: any) {
       this._recorder?.completeAction(undefined);
       return {
@@ -97,6 +98,17 @@ export class BrowserBackend implements ServerBackend {
       context.setRunningTool(undefined);
     }
     return responseObject;
+  }
+
+  // Prepend a one-shot recorder banner to the first browser_* result of a flow. Runs
+  // AFTER _recordAction so the banner never leaks into the captured session artifacts.
+  private _maybeAnnounceRecording(name: string, responseObject: mcpServer.CallToolResult): void {
+    if (!name.startsWith('browser_'))
+      return;
+    const notice = this._recorder?.consumeStartNotice();
+    if (!notice)
+      return;
+    responseObject.content = [{ type: 'text' as const, text: notice }, ...(responseObject.content ?? [])];
   }
 
   private _recordAction(responseObject: mcpServer.CallToolResult, cwd: string | undefined): void {

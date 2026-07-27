@@ -71,6 +71,7 @@ export class McpSessionRecorder {
   private _sessionFile: string;
   private _writeTimer: NodeJS.Timeout | undefined;
   private _disposed = false;
+  private _noticeShown = false;
   private readonly _defaultScenario: string;
   private readonly _defaultSpecFile: string;
 
@@ -93,6 +94,8 @@ export class McpSessionRecorder {
     this._actions = [];
     this._current = null;
     this._sessionStart = Date.now();
+    // Re-arm the start notice so the next flow re-announces where it is being written.
+    this._noticeShown = false;
     if (name) {
       this._options.scenarioName = name;
       this._options.specFile = path.join(this._options.cwd, 'tests', `${slugify(name)}.spec.ts`);
@@ -106,6 +109,24 @@ export class McpSessionRecorder {
     }
     this._writeFiles();
     return path.relative(this._options.cwd, this._options.specFile);
+  }
+
+  /**
+   * One-shot banner surfaced on the first browser action of a flow, so the assistant
+   * learns — at the point of use, regardless of whether its client forwarded the
+   * server `instructions` — that recording is always-on and how to finish the test.
+   * Re-armed by reset() so each named flow re-announces its target file.
+   */
+  consumeStartNotice(): string | undefined {
+    if (this._noticeShown)
+      return undefined;
+    this._noticeShown = true;
+    const relSpec = path.relative(this._options.cwd, this._options.specFile);
+    return [
+      `📼 Playwright Codegen Pro recorder is ON — every browser_* action is being captured live into ${relSpec} and .playwright-session.md.`,
+      `This is the Playwright Codegen Pro recorder MCP (it has recorder_get_session / recorder_reset), not the standard Playwright MCP.`,
+      `When this flow is complete, call recorder_get_session and turn the recording into a polished test — do not hand-write a script and iterate run-fail-fix. Call recorder_reset (optionally with a name) before recording an independent flow.`,
+    ].join('\n');
   }
 
   /** Called before a tool runs, so network events attribute to it. */
