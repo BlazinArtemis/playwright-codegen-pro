@@ -25,8 +25,18 @@ import { debug } from '../../utilsBundle';
 import type { ContextConfig } from './context';
 import type * as playwright from '../../..';
 import type { Tool } from './tool';
+import type { McpRecorderState } from './mcpSessionRecorder';
 import type * as mcpServer from '../utils/mcp/server';
 import type { ClientInfo, ServerBackend } from '../utils/mcp/server';
+
+// The browser dying does not end the MCP session: the user can close the window, the
+// browser can crash, or a CDP connection can drop. These are the errors that surface
+// when a tool then talks to the dead browser.
+const kBrowserGoneRe = /Target (?:page, context or browser has been closed|closed)|Browser (?:has been closed|has disconnected|closed unexpectedly)|(?:Page|Browser context) has been closed|Connection closed/i;
+
+// Recordings that were in flight when a browser died, keyed by cwd. Handed to the
+// replacement backend so a crash mid-flow does not restart the test from scratch.
+const pendingRecordings = new Map<string, McpRecorderState>();
 
 export class BrowserBackend implements ServerBackend {
   private _tools: Tool[];
@@ -34,6 +44,8 @@ export class BrowserBackend implements ServerBackend {
   private _sessionLog: SessionLog | undefined;
   private _recorder: McpSessionRecorder | undefined;
   private _config: ContextConfig;
+  private _cwd: string | undefined;
+  private _browserGone = false;
   readonly browserContext: playwright.BrowserContext;
 
   constructor(config: ContextConfig, browserContext: playwright.BrowserContext, tools: Tool[]) {
@@ -52,21 +64,29 @@ export class BrowserBackend implements ServerBackend {
     // Always-on live recording: every browser tool the agent fires is captured into
     // .playwright-session.md (read by recorder_get_session) and a runnable draft spec.
     const cwd = clientInfo.cwd || process.cwd();
+    this._cwd = cwd;
+    // Resume a recording that a dead browser interrupted, so the flow continues in the
+    // same test rather than starting over from the relaunch.
+    const resumeFrom = pendingRecordings.get(cwd);
+    pendingRecordings.delete(cwd);
     this._recorder = new McpSessionRecorder(this.browserContext, {
       cwd,
       scenarioName: 'Recorded via Playwright Codegen Pro MCP',
       specFile: path.join(cwd, 'tests', 'mcp-session.spec.ts'),
       secrets: this._config.secrets,
+      resumeFrom,
     });
     this._context.mcpRecorder = this._recorder;
   }
 
   async dispose() {
+    if (this._browserGone && this._recorder && this._cwd)
+      pendingRecordings.set(this._cwd, this._recorder.takeState());
     await this._recorder?.dispose().catch(e => debug('pw:tools:error')(e));
     await this._context?.dispose().catch(e => debug('pw:tools:error')(e));
   }
 
-  async callTool(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments'] & { _meta?: Record<string, any> } = {}): Promise<mcpServer.CallToolResult> {
+  async callTool(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments'] & { _meta?: Record<string, any> } = {}): Promise<mcpServer.CallToolResult & { isClose?: boolean }> {
     const tool = this._tools.find(tool => tool.schema.name === name)!;
     if (!tool) {
       return {
@@ -90,6 +110,16 @@ export class BrowserBackend implements ServerBackend {
       this._maybeAnnounceRecording(name, responseObject);
     } catch (error: any) {
       this._recorder?.completeAction(undefined);
+      if (await this._isBrowserGone(error)) {
+        // isClose makes the server dispose this backend, so the next tool call builds a
+        // fresh one (and a fresh browser) instead of failing forever with the same error.
+        this._browserGone = true;
+        return {
+          content: [{ type: 'text' as const, text: `### Error\n${String(error)}\n\nThe browser is no longer running — it was closed or crashed outside of this session. It has been discarded and the next tool call will start a fresh browser, so retry your last action. The recording so far is preserved; you may need to re-navigate and sign in again.` }],
+          isError: true,
+          isClose: true,
+        };
+      }
       return {
         content: [{ type: 'text' as const, text: `### Error\n${String(error)}` }],
         isError: true,
@@ -98,6 +128,19 @@ export class BrowserBackend implements ServerBackend {
       context.setRunningTool(undefined);
     }
     return responseObject;
+  }
+
+  // A target-closed error is only fatal to the session if the browser or its context is
+  // actually gone — a page closing under an action (a popup, a self-closing window) throws
+  // the same message while the browser is perfectly healthy, and must not tear it down.
+  private async _isBrowserGone(error: any): Promise<boolean> {
+    if (!kBrowserGoneRe.test(String(error?.message ?? error)))
+      return false;
+    const browser = this.browserContext.browser();
+    if (!browser || !browser.isConnected())
+      return true;
+    // Browser still up: probe the context itself, which only throws once it is closed.
+    return await this.browserContext.cookies().then(() => false, () => true);
   }
 
   // Prepend a one-shot recorder banner to the first browser_* result of a flow. Runs

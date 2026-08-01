@@ -15,6 +15,8 @@
  */
 
 import { spawnSync } from 'child_process';
+import { chromium } from 'playwright';
+
 import { test, expect, mcpServerPath } from './fixtures';
 
 test.describe.configure({
@@ -81,6 +83,51 @@ test('should throw connection error and allow re-connecting', async ({ cdpServer
   })).toHaveResponse({
     snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
   });
+});
+
+test('should recover when the browser is closed out-of-band', async ({ cdpServer, startClient, server, mcpBrowser }, testInfo) => {
+  const browserContext = await cdpServer.start();
+  const { client } = await startClient({ args: [`--cdp-endpoint=${cdpServer.endpoint}`] });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.HELLO_WORLD },
+  })).toHaveResponse({
+    snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+  });
+
+  // The user closes the browser (or it crashes) behind the MCP's back.
+  await browserContext.close();
+
+  expect(await client.callTool({
+    name: 'browser_snapshot',
+  })).toHaveResponse({
+    error: expect.stringContaining(`The browser is no longer running`),
+    isError: true,
+  });
+
+  // The dead browser must not poison the session: the next call reconnects.
+  const port = Number(new URL(cdpServer.endpoint).port);
+  const secondContext = await chromium.launchPersistentContext(testInfo.outputPath('cdp-user-data-dir-2'), {
+    channel: mcpBrowser,
+    headless: true,
+    args: [`--remote-debugging-port=${port}`],
+  });
+  try {
+    expect(await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.HELLO_WORLD },
+    })).toHaveResponse({
+      snapshot: expect.stringContaining(`- generic [active] [ref=e1]: Hello, world!`),
+    });
+
+    // The recording is not restarted by the relaunch — both navigations are in one test.
+    const session = await client.callTool({ name: 'recorder_get_session' });
+    const text = (session.content as { text: string }[])[0].text;
+    expect(text.match(/browser_navigate/g)).toHaveLength(2);
+  } finally {
+    await secondContext.close();
+  }
 });
 
 test('does not support --device', async () => {

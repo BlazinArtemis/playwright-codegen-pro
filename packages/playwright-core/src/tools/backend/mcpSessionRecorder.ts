@@ -36,6 +36,17 @@ export type McpRecorderOptions = {
   scenarioName: string;
   specFile: string;
   secrets?: Record<string, string>;
+  /** In-progress recording to continue, when a dead browser forced a new backend. */
+  resumeFrom?: McpRecorderState;
+};
+
+/** Everything a replacement recorder needs to continue an interrupted recording. */
+export type McpRecorderState = {
+  actions: McpAction[];
+  sessionStart: number;
+  scenarioName: string;
+  specFile: string;
+  noticeShown: boolean;
 };
 
 type McpAction = {
@@ -80,8 +91,30 @@ export class McpSessionRecorder {
     this._defaultScenario = options.scenarioName;
     this._defaultSpecFile = options.specFile;
     this._sessionFile = path.join(options.cwd, '.playwright-session.md');
+    const resume = options.resumeFrom;
+    if (resume) {
+      this._actions = resume.actions;
+      this._sessionStart = resume.sessionStart;
+      this._noticeShown = resume.noticeShown;
+      this._options.scenarioName = resume.scenarioName;
+      this._options.specFile = resume.specFile;
+    }
     this._network = new McpNetworkCapture(context, () => this._current, () => this._scheduleWrite());
     this._network.start();
+  }
+
+  /**
+   * Snapshot of the in-progress recording, handed to the recorder of a replacement backend
+   * after the browser died so the flow keeps accumulating into the same test.
+   */
+  takeState(): McpRecorderState {
+    return {
+      actions: this._actions,
+      sessionStart: this._sessionStart,
+      scenarioName: this._options.scenarioName,
+      specFile: this._options.specFile,
+      noticeShown: this._noticeShown,
+    };
   }
 
   /**
