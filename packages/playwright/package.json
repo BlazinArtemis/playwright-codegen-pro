@@ -1,6 +1,6 @@
 {
   "name": "playwright-codegen-pro",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "AI-powered Playwright codegen with network capture, data redaction, and MCP integration",
   "repository": {
     "type": "git",
@@ -61,7 +61,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "playwright-core": "npm:playwright-codegen-pro-core@1.0.8"
+    "playwright-core": "npm:playwright-codegen-pro-core@1.0.9"
   },
   "optionalDependencies": {
     "fsevents": "2.3.2"

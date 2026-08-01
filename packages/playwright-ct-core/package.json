@@ -1,6 +1,6 @@
 {
   "name": "@playwright/experimental-ct-core",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Playwright Component Testing Helpers",
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
     }
   },
   "dependencies": {
-    "playwright-codegen-pro-core": "1.0.8",
+    "playwright-codegen-pro-core": "1.0.9",
     "vite": "^6.4.1",
     "playwright": "1.59.0-next"
   }
